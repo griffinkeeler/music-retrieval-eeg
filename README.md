@@ -344,9 +344,8 @@ The unittest-compatible suite can also be run with
 
 The end-to-end Table I workflow is a procedural reproduction using the current
 fixed-microvolt inputs and pinned environment. Archived results and their saved
-configs use recording-wise robust scaling. The paper reports Python 3.12 and
-PyTorch 2.12, while this branch uses Python 3.13 and PyTorch 2.13. In addition,
-the original training implementation did not explicitly seed model
+configs use recording-wise robust scaling. The paper and repo use Python 3.13 and
+PyTorch 2.13. The original training implementation did not explicitly seed model
 initialization. Therefore, use the original saved splits, configs, and
 checkpoints when bitwise reproduction of the published decimals is required;
 fresh training reproduces the experiment rather than guaranteeing identical
