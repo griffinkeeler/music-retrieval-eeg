@@ -3,7 +3,6 @@
 /runs/
 /logs/
 /slurms/
-/RETRAINING_UV.md
 
 # Python environments and caches
 /.venv/
