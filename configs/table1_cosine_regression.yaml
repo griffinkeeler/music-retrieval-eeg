@@ -1,0 +1,7 @@
+# Table I matched-encoder ablation using paired cosine regression.
+extends: cosine_regression_paper.yaml
+
+run_name: table1-cosine-regression
+
+ablations:
+  use_subject_layer: true

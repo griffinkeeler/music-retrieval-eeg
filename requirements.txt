@@ -1,0 +1,15 @@
+torch==2.13.0
+torchaudio==2.13.0
+transformers==5.15.1
+librosa==1.0.0
+pandas==3.0.5
+scikit-learn==1.9.0
+omegaconf==2.3.1
+mne==1.12.1
+numpy==2.4.6
+h5py==3.16.0
+scipy==1.18.0
+matplotlib==3.11.1
+joblib==1.5.3
+tensorboard==2.20.0
+pytest==8.4.1

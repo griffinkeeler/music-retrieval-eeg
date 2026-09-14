@@ -1,0 +1,19 @@
+# Local data and experiment artifacts
+/data/
+/runs/
+/logs/
+/slurms/
+/RETRAINING_UV.md
+
+# Python environments and caches
+/.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Editor and operating-system files
+.idea/
+.DS_Store
+
+# Private research notes are not part of the paper artifact.
+/docs/

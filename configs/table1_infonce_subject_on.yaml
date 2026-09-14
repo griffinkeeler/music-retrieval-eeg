@@ -1,0 +1,7 @@
+# Table I InfoNCE condition with learned subject-specific channel alignment.
+extends: infonce_paper.yaml
+
+run_name: table1-infonce-subject-on
+
+ablations:
+  use_subject_layer: true

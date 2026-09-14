@@ -1,0 +1,15 @@
+extends: base.yaml
+run_name: icassp2027-uv-random-segment-out
+training:
+  filename: random_segment_out_fold0.csv
+testing:
+  filename: random_segment_out_fold0.csv
+splits:
+  song_out:
+    file_name: null
+  subject_out:
+    file_name: null
+  subject_song_out:
+    file_name: null
+  chunk_out:
+    file_name: null

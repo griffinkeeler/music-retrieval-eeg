@@ -1,0 +1,6 @@
+extends: base.yaml
+run_name: icassp2027-uv-splits
+training:
+  filename: chunk_out_fold0.csv
+testing:
+  filename: chunk_out_fold0.csv

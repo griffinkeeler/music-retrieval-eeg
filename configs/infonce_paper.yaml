@@ -1,0 +1,6 @@
+# Main fixed-microvolt InfoNCE experiment.
+# Shared architecture, data, split, optimizer, and evaluation settings live in
+# base.yaml; this file supplies the stable output name for the complete run.
+extends: base.yaml
+
+run_name: icassp2027-uv-infonce-25split

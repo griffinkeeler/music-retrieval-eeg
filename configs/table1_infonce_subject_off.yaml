@@ -1,0 +1,7 @@
+# Table I InfoNCE condition with the subject-specific channel layer disabled.
+extends: infonce_paper.yaml
+
+run_name: table1-infonce-subject-off
+
+ablations:
+  use_subject_layer: false

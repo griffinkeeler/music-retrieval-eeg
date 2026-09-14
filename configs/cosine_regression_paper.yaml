@@ -1,0 +1,9 @@
+# Matched-objective ablation for testing whether contrastive negatives help.
+# All architecture, split, seed, optimizer, and evaluation settings are inherited
+# from the main experiment; only its output name and InfoNCE objective are replaced.
+extends: infonce_paper.yaml
+
+run_name: cosine-regression-uv-25split
+
+objective:
+  type: cosine_regression

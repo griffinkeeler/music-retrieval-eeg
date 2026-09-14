@@ -1,0 +1,15 @@
+extends: base.yaml
+run_name: icassp2027-uv-subject-song-out
+training:
+  filename: subject_song_out_fold0.csv
+testing:
+  filename: subject_song_out_fold0.csv
+splits:
+  song_out:
+    file_name: null
+  subject_out:
+    file_name: null
+  chunk_out:
+    file_name: null
+  random_segment_out:
+    file_name: null

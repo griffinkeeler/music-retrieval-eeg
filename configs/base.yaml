@@ -1,0 +1,112 @@
+# Shared fixed-microvolt settings. Run a split-specific config instead of this file.
+metadata:
+  filename: five_sec_windows.csv
+
+split_directory: runs/icassp2027-uv-splits/splits
+
+clip:
+  temperature: 0.07
+
+objective:
+  type: infonce
+
+retrieval:
+  regime: across_song
+  candidate_gap_size: 0
+
+training:
+  filename: null
+  num_training_epochs: 100
+  checkpoint_every: 10
+  batch_size: 16
+  learning_rate: 0.0003
+  seed: 1
+  validation: true
+  evaluate_train_split: false
+  early_stopping:
+    enabled: true
+    patience: 10
+    min_delta: 0.001
+    monitor: val_loss
+    mode: min
+
+testing:
+  filename: null
+  log_name: testing.log
+  n_perms: 1000
+  n_within_song_shuffles: 1000
+  song_search_n_perms: 1000
+  song_search_permutation_batch_size: 16
+  song_search_marginal_temperature: 0.07
+  song_search_filename: song_search_results.csv
+
+ablations:
+  use_subject_layer: true
+  freeze_audio_projection: false
+  use_direct_alignment: true
+
+splits:
+  song_out:
+    file_name: song_out.csv
+    train_song_id: [21, 22, 24, 25, 26, 29]
+    val_song_id: [23]
+    test_song_id: [27, 28, 30]
+    randomize:
+      enabled: true
+      n_train_songs: 6
+      n_val_songs: 1
+      n_test_songs: 3
+      seed: 42
+      n_folds: 5
+
+  subject_out:
+    file_name: subject_out.csv
+    train_subject_ids: [0]
+    val_subject_ids: [18]
+    test_subject_ids: [19]
+    randomize:
+      enabled: true
+      n_train_subjects: 12
+      n_val_subjects: 2
+      n_test_subjects: 6
+      seed: 42
+      n_folds: 5
+
+  subject_song_out:
+    file_name: subject_song_out.csv
+    train_song_ids: [21, 22, 24, 25, 26, 29]
+    train_subject_ids: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    val_song_ids: [23]
+    val_subject_ids: [11, 12]
+    test_song_ids: [27, 28, 30]
+    test_subject_ids: [13, 14, 15, 16, 17, 18, 19]
+    randomize:
+      enabled: true
+      n_train_songs: 6
+      n_train_subjects: 12
+      n_val_songs: 1
+      n_val_subjects: 2
+      n_test_songs: 3
+      n_test_subjects: 6
+      seed: 42
+      n_folds: 5
+
+  chunk_out:
+    file_name: chunk_out.csv
+    train_frac: 0.6
+    val_frac: 0.10
+    test_frac: 0.3
+    n_folds: 5
+    include_song_ids: null
+    exclude_song_ids: null
+
+  random_segment_out:
+    file_name: random_segment_out.csv
+    train_frac: 0.6
+    val_frac: 0.10
+    test_frac: 0.3
+    same_across_subjects: true
+    seed: 42
+    n_folds: 5
+    include_song_ids: null
+    exclude_song_ids: null
