@@ -1,0 +1,51 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite the paper described in preferred-citation."
+title: "Music Retrieval from EEG Using Contrastive Learning"
+type: software
+
+authors:
+  - given-names: Griffin
+    family-names: Keeler
+    affiliation: "University of Wisconsin-River Falls"
+  - given-names: Evan
+    family-names: Szypulski
+    affiliation: "Georgia State University"
+
+repository-code: "https://github.com/griffinkeeler/music-retrieval-eeg"
+license: MIT
+
+abstract: >-
+  Code accompanying the ICASSP 2027 submission on retrieving aligned music
+  from EEG recorded during naturalistic listening.
+
+keywords:
+  - electroencephalography
+  - contrastive learning
+  - music information retrieval
+  - brain-computer interface
+
+preferred-citation:
+  type: conference-paper
+  title: "Music Retrieval from EEG Using Contrastive Learning"
+  authors:
+    - given-names: Griffin
+      family-names: Keeler
+      affiliation: "University of Wisconsin-River Falls"
+    - given-names: Evan
+      family-names: Szypulski
+      affiliation: "Georgia State University"
+    - given-names: Fazla
+      family-names: Mashrur
+      affiliation: "University of Rochester"
+    - given-names: Ajay
+      family-names: Anand
+      affiliation: "University of Rochester"
+    - given-names: Zhiyao
+      family-names: Duan
+      affiliation: "University of Rochester"
+    - given-names: Mujdat
+      family-names: Cetin
+      affiliation: "University of Rochester"
+  conference:
+    name: "2027 IEEE International Conference on Acoustics, Speech, and Signal Processing (ICASSP)"
+  status: submitted
