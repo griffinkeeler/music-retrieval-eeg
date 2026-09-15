@@ -1,0 +1,4 @@
+# Table I ridge-regression baseline using the shared paper settings.
+extends: ridge_paper.yaml
+
+run_name: table1-ridge-regression
