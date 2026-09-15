@@ -7,7 +7,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_DIR="$(cd -- "$SCRIPT_DIR/.." && pwd -P)"
-CONFIG_PATH="$REPO_DIR/configs/eeg2mel_paper.yaml"
+CONFIG_PATH="$REPO_DIR/configs/table1_eeg2mel.yaml"
 SPLIT_RUN_NAME="eeg2mel_uv"
 OUTPUT_RUN_PREFIX="eeg2mel-uv-25split"
 VENV_PATH=""
@@ -31,7 +31,7 @@ averaged by split family. Outputs are written under:
   runs/final_results/<output-prefix>/average_metrics/
 
 Options:
-  --config PATH          Config YAML (default: configs/eeg2mel_paper.yaml)
+  --config PATH          Config YAML (default: configs/table1_eeg2mel.yaml)
   --split-run-name NAME  Directory under runs/ containing splits
                          (default: eeg2mel_uv)
   --output-prefix NAME   Prefix for the 25 model run directories

@@ -14,8 +14,8 @@
 # Each array task handles one split/fold from start to finish. Mel targets and
 # split CSVs must be prepared once before submitting the array:
 #
-#   python -m src.data.create_mel_targets --config configs/eeg2mel_paper.yaml
-#   python -m src.data.create_splits --config configs/eeg2mel_paper.yaml
+#   python -m src.data.create_mel_targets --config configs/table1_eeg2mel.yaml
+#   python -m src.data.create_splits --config configs/table1_eeg2mel.yaml
 #
 # From the repository root on a BlueHive login node:
 #   sbatch slurms/run_eeg2mel_25fold_pipeline.slurm
@@ -92,7 +92,7 @@ if [[ -z "$PYTHON_BIN" || ! -x "$PYTHON_BIN" ]]; then
   exit 1
 fi
 
-CONFIG_PATH="${CONFIG_PATH:-$REPO_DIR/configs/eeg2mel_paper.yaml}"
+CONFIG_PATH="${CONFIG_PATH:-$REPO_DIR/configs/table1_eeg2mel.yaml}"
 if [[ "$CONFIG_PATH" != /* ]]; then
   CONFIG_PATH="$REPO_DIR/$CONFIG_PATH"
 fi

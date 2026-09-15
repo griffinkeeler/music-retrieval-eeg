@@ -86,7 +86,7 @@ def parse_args(argv=None):
     )
     parser.add_argument(
         "--config",
-        default="configs/eeg2mel_paper.yaml",
+        default="configs/table1_eeg2mel.yaml",
         help="Path to the standalone paper EEG2Mel config.",
     )
     parser.add_argument(
