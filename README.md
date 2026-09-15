@@ -345,7 +345,5 @@ The unittest-compatible suite can also be run with
 The end-to-end Table I workflow is a procedural reproduction using the current
 fixed-microvolt inputs and pinned environment. The paper and repo use Python 3.13 and
 PyTorch 2.13. The original training implementation did not explicitly seed model
-initialization. Therefore, use the original saved splits, configs, and
-checkpoints when bitwise reproduction of the published decimals is required;
-fresh training reproduces the experiment rather than guaranteeing identical
+initialization. Fresh training reproduces the experiment rather than guaranteeing identical
 floating-point results.
