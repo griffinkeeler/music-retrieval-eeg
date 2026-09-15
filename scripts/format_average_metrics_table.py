@@ -536,6 +536,8 @@ def _combined_run_label(run_name):
     compact_name = re.sub(r"[^a-z0-9]", "", run_name.lower())
     if "eeg2mel" in compact_name:
         return "EEG2Mel"
+    if "ridgeregression" in compact_name:
+        return "Ridge Regression"
     if "cosineregression" in compact_name:
         return "Cosine Regression"
     if "subjectlayeroff" in compact_name or "subjectoff" in compact_name:

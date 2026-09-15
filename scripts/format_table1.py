@@ -17,7 +17,7 @@ from scripts.format_average_metrics_table import (
 METHODS = (
     ("subject_layer_on", "Subject Layer On", "table1-infonce-subject-on"),
     ("subject_layer_off", "Subject Layer Off", "table1-infonce-subject-off"),
-    ("cosine_regression", "Cosine Regression", "table1-cosine-regression"),
+    ("ridge_regression", "Ridge Regression", "table1-ridge-regression"),
     ("eeg2mel", "EEG2Mel", "table1-eeg2mel"),
 )
 PANELS = (
