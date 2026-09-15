@@ -121,6 +121,43 @@ def precompute_similarity_matrix(eeg_emb, audio_emb):
         return similarities / (eeg_norms.unsqueeze(1) * audio_norms.unsqueeze(0))
 
 
+def precompute_negative_mse_matrix(predicted, target):
+    """Compute pairwise negative-MSE scores for equally shaped representations.
+
+    Retrieval helpers rank larger scores first, so returning ``-MSE`` makes
+    the target with the lowest mean-squared error the top-ranked candidate.
+    """
+    predicted = torch.as_tensor(
+        predicted, dtype=torch.float32, device="cpu"
+    ).contiguous()
+    target = torch.as_tensor(
+        target, dtype=torch.float32, device="cpu"
+    ).contiguous()
+
+    if predicted.ndim < 2 or target.ndim < 2:
+        raise ValueError("MSE retrieval inputs must include a batch dimension.")
+    if tuple(predicted.shape[1:]) != tuple(target.shape[1:]):
+        raise ValueError(
+            "MSE retrieval inputs must have identical non-batch shapes, "
+            f"got {tuple(predicted.shape[1:])} and {tuple(target.shape[1:])}."
+        )
+
+    predicted_flat = predicted.flatten(1)
+    target_flat = target.flatten(1)
+    n_features = predicted_flat.shape[1]
+    if n_features == 0:
+        raise ValueError("MSE retrieval inputs must contain at least one feature.")
+
+    with torch.no_grad():
+        squared_distances = (
+            predicted_flat.square().sum(dim=1, keepdim=True)
+            + target_flat.square().sum(dim=1).unsqueeze(0)
+            - 2.0 * (predicted_flat @ target_flat.T)
+        )
+        squared_distances.clamp_min_(0.0)
+        return -squared_distances / n_features
+
+
 def _dense_candidate_pool(rows, song_ids, window_idxs, device):
     if not rows or any(not row for row in rows):
         raise ValueError("Candidate pool is empty for at least one query.")
@@ -164,8 +201,9 @@ def build_retrieval_evaluation_cache(
         song_ids,
         window_idxs,
         gap=0,
+        score_metric="cosine",
 ):
-    """Precompute similarities and all candidate pools used during testing."""
+    """Precompute scores and all candidate pools used during testing."""
     song_ids = tuple(int(x) for x in song_ids)
     window_idxs = tuple(int(x) for x in window_idxs)
     if len(song_ids) != len(window_idxs):
@@ -173,7 +211,15 @@ def build_retrieval_evaluation_cache(
     if len(song_ids) != len(eeg_emb) or len(song_ids) != len(audio_emb):
         raise ValueError("Embeddings and retrieval metadata must have the same length.")
 
-    similarities = precompute_similarity_matrix(eeg_emb, audio_emb)
+    if score_metric == "cosine":
+        similarities = precompute_similarity_matrix(eeg_emb, audio_emb)
+    elif score_metric == "negative_mse":
+        similarities = precompute_negative_mse_matrix(eeg_emb, audio_emb)
+    else:
+        raise ValueError(
+            "score_metric must be 'cosine' or 'negative_mse', "
+            f"got {score_metric!r}."
+        )
     if similarities.shape != (len(song_ids), len(song_ids)):
         raise ValueError("Expected a square EEG/audio similarity matrix.")
 

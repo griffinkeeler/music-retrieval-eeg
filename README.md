@@ -335,9 +335,10 @@ overridden from the launcher; run it with `--help` for the complete list.
 
 The paper reports the five-second EEG2Mel baseline preserved from the
 `feature/eeg2melembed` experiment branch. It divides every five-second EEG/audio
-row into five one-second training targets, reconstructs a five-second waveform,
-embeds that waveform with frozen MERT, and applies the same retrieval benchmark
-as the contrastive model.
+row into five one-second training targets. Following `feature/eeg2mel`, its
+default evaluation compares the predicted and target mel spectrograms directly:
+it reports one- and five-second reconstruction metrics, cosine retrieval, and
+exact-window retrieval ranked by nearest mel MSE.
 
 Run the complete 25-fold EEG2Mel workflow locally with:
 
@@ -351,6 +352,12 @@ preprocessing or training. The standalone settings in
 `configs/eeg2mel_paper.yaml` use UV metadata, mel targets under
 `data/mel_targets/uv/5s/`, and splits under `runs/eeg2mel_uv/splits/`. Training
 and evaluation use the output prefix `eeg2mel-uv-25split`.
+
+Reconstructing waveforms with Griffin-Lim and embedding them with frozen MERT
+is an optional, slower comparison. Enable it for a single evaluation with
+`--mert-space`, or set
+`eeg2mel_baseline.evaluation.mert_space.enabled: true` in the config. The
+25-fold launcher accepts the same `--mert-space` flag.
 
 ## Tests
 

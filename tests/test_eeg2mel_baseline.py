@@ -23,6 +23,7 @@ from src.evaluation.eeg2mel_baseline import (
     eeg2mel_flatten_dim,
     eeg_psd_transform,
     reconstruct_and_embed,
+    resolve_eeg2mel_settings,
 )
 
 
@@ -242,6 +243,10 @@ class EEG2MelDatasetTests(unittest.TestCase):
 
         sample = dataset[0]
         self.assertEqual(tuple(sample["eeg_psd_stack"].shape), (SUB_WINDOWS_PER_ROW, 125, 63))
+        self.assertEqual(
+            tuple(sample["mel_target_stack"].shape),
+            (SUB_WINDOWS_PER_ROW, 64, 47),
+        )
         self.assertEqual(tuple(sample["audio"].shape), (768, 374))
         self.assertEqual(sample["subject_id"], 0)
         self.assertEqual(sample["song_id"], 21)
@@ -254,6 +259,24 @@ class EEG2MelDatasetTests(unittest.TestCase):
         dataset = EEG2MelEvalDataset(metadata_path=self.metadata_path, split="train")
 
         self.assertEqual(dataset[0]["section_id"], -1)
+
+    def test_eval_dataset_can_skip_mert_target_loading(self):
+        metadata = pd.read_csv(self.metadata_path)
+        audio_path = self.base_dir / metadata.iloc[0].audio_path
+        audio_path.unlink()
+
+        dataset = EEG2MelEvalDataset(
+            metadata_path=self.metadata_path,
+            split="train",
+            include_audio=False,
+        )
+        sample = dataset[0]
+
+        self.assertNotIn("audio", sample)
+        self.assertEqual(
+            tuple(sample["mel_target_stack"].shape),
+            (SUB_WINDOWS_PER_ROW, 64, 47),
+        )
 
 
 class SequenceReconstructionTests(unittest.TestCase):
@@ -297,6 +320,19 @@ class SequenceReconstructionTests(unittest.TestCase):
             self.processor = SequenceReconstructionTests.FakeProcessor()
             self.target_sr = 24000
 
+        def encode_arrays(self, arrays):
+            inputs = self.processor(
+                arrays,
+                sampling_rate=self.target_sr,
+                return_tensors="pt",
+                padding=True,
+            )
+            outputs = self.model(
+                **inputs,
+                output_hidden_states=True,
+            )
+            return outputs.hidden_states[-1].transpose(1, 2).contiguous()
+
     def test_reconstruct_and_embed_preserves_mert_time_axis(self):
         extractor = self.FakeMERTExtractor()
         eeg_psd_stack = torch.randn(2, SUB_WINDOWS_PER_ROW, 5, 4)
@@ -311,6 +347,20 @@ class SequenceReconstructionTests(unittest.TestCase):
         self.assertEqual(tuple(embeddings.shape), (2, 3, 4))
         expected = torch.arange(2 * 4 * 3, dtype=torch.float32).reshape(2, 4, 3)
         torch.testing.assert_close(embeddings, expected.transpose(1, 2))
+
+
+class EEG2MelEvaluationSettingsTests(unittest.TestCase):
+    def test_mert_space_is_disabled_by_default(self):
+        config = {
+            "testing": {"n_perms": 10, "n_within_song_shuffles": 10},
+            "eeg2mel_baseline": {},
+        }
+
+        settings = resolve_eeg2mel_settings(config)
+
+        self.assertFalse(settings["mert_space_enabled"])
+        self.assertTrue(settings["save_representations"])
+        self.assertEqual(settings["mert_batch_size"], 2)
 
 
 if __name__ == "__main__":

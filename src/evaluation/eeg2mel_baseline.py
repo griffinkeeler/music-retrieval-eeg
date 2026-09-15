@@ -6,11 +6,11 @@ vendored reference -- nothing here imports from it). Unlike that reference,
 which windows EEG/audio at 1 second, this project's windows are 5 seconds.
 Training operates at the original 1-second sub-window granularity (matching
 the reference architecture's conv-stack sizing and giving 5x more training
-examples per cached row); at evaluation time, 5 predicted 1-second
-mel-spectrograms are concatenated into one 5-second spectrogram before a
-single Griffin-Lim reconstruction pass, then embedded with this project's own
-frozen MERT extractor (in place of the reference's CLAP) for retrieval
-scoring via the same candidate-pool benchmark used everywhere else.
+examples per cached row). At evaluation time, 5 predicted 1-second
+mel-spectrograms are concatenated into one 5-second spectrogram. Mel-space
+reconstruction and retrieval are the default evaluation, matching the
+``feature/eeg2mel`` branch. Griffin-Lim reconstruction followed by frozen MERT
+embedding remains available as an optional comparison.
 """
 
 from pathlib import Path
@@ -163,6 +163,8 @@ def resolve_eeg2mel_settings(args):
     cfg = args.get("eeg2mel_baseline", {}) or {}
     testing_args = args["testing"]
     early_stopping_cfg = cfg.get("early_stopping", {}) or {}
+    evaluation_cfg = cfg.get("evaluation", {}) or {}
+    mert_space_cfg = evaluation_cfg.get("mert_space", {}) or {}
 
     settings = {
         "eeg_sample_rate": float(cfg.get("eeg_sample_rate", 125.0)),
@@ -188,6 +190,17 @@ def resolve_eeg2mel_settings(args):
         "n_within_song_shuffles": int(
             cfg.get("n_within_song_shuffles", testing_args.get("n_within_song_shuffles", 200))
         ),
+        "evaluation_batch_size": int(
+            evaluation_cfg.get("batch_size") or cfg.get("batch_size", 16)
+        ),
+        "save_representations": bool(
+            evaluation_cfg.get("save_representations", True)
+        ),
+        "mert_space_enabled": bool(mert_space_cfg.get("enabled", False)),
+        "mert_model_name": str(
+            mert_space_cfg.get("model_name", "m-a-p/MERT-v1-95M")
+        ),
+        "mert_batch_size": int(mert_space_cfg.get("batch_size", 2)),
         "output_filename": str(cfg.get("output_filename", "eeg2mel_baseline_test.json")),
     }
 
@@ -197,6 +210,12 @@ def resolve_eeg2mel_settings(args):
         raise ValueError("eeg2mel_baseline.audio_pooling must be 'sequence'.")
     if not settings["ks"] or any(k < 1 for k in settings["ks"]):
         raise ValueError("eeg2mel_baseline.ks must contain positive integers.")
+    if settings["evaluation_batch_size"] < 1:
+        raise ValueError("eeg2mel_baseline.evaluation.batch_size must be at least 1.")
+    if settings["mert_batch_size"] < 1:
+        raise ValueError(
+            "eeg2mel_baseline.evaluation.mert_space.batch_size must be at least 1."
+        )
 
     settings["psd_shape"] = (
         125,
@@ -274,14 +293,41 @@ class EEG2MelEvalDataset(EEGMusicWindowDataset):
     5-second retrieval granularity.
     """
 
-    def __init__(self, metadata_path, split=None, eeg_sample_rate=125.0):
+    def __init__(
+        self,
+        metadata_path,
+        split=None,
+        eeg_sample_rate=125.0,
+        include_audio=True,
+    ):
         super().__init__(metadata_path, split=split)
         self.eeg_sample_rate = float(eeg_sample_rate)
         self.samples_per_sub_window = int(round(self.eeg_sample_rate))
+        self.include_audio = bool(include_audio)
 
     def __getitem__(self, idx):
-        sample = super().__getitem__(idx)
-        eeg = sample["eeg"]
+        row = self.metadata.iloc[idx]
+        if self.include_audio:
+            sample = super().__getitem__(idx)
+            eeg = sample["eeg"]
+        else:
+            eeg_path = _resolve_relative_path(row["eeg_path"], self.base_dir)
+            eeg_payload = torch.load(eeg_path, weights_only=False)
+            eeg = eeg_payload["epoch"]
+            if not isinstance(eeg, torch.Tensor):
+                eeg = torch.as_tensor(eeg)
+
+        mel_path = _resolve_relative_path(row["mel_path"], self.base_dir)
+        mel_payload = torch.load(mel_path, weights_only=False)
+        mel_targets = mel_payload["mel_targets"]
+        if not isinstance(mel_targets, torch.Tensor):
+            mel_targets = torch.as_tensor(mel_targets)
+        mel_targets = mel_targets.float()
+        if mel_targets.shape[0] != SUB_WINDOWS_PER_ROW:
+            raise ValueError(
+                f"Expected {SUB_WINDOWS_PER_ROW} mel targets in {mel_path}, "
+                f"got shape {tuple(mel_targets.shape)}."
+            )
 
         psd_stack = []
         for sub_idx in range(SUB_WINDOWS_PER_ROW):
@@ -291,14 +337,17 @@ class EEG2MelEvalDataset(EEGMusicWindowDataset):
             psd_stack.append(eeg_psd_transform(eeg_sub, fs=self.eeg_sample_rate))
         eeg_psd_stack = torch.as_tensor(np.stack(psd_stack), dtype=torch.float32)
 
-        return {
+        result = {
             "eeg_psd_stack": eeg_psd_stack,
-            "audio": sample["audio"],
-            "subject_id": sample["subject_id"],
-            "song_id": sample["song_id"],
-            "window_idx": sample["window_idx"],
-            "section_id": sample["section_id"],
+            "mel_target_stack": mel_targets,
+            "subject_id": int(row["subject_id"]),
+            "song_id": int(row["song_id"]),
+            "window_idx": int(row["window_idx"]),
+            "section_id": int(row.get("section_id", -1)),
         }
+        if self.include_audio:
+            result["audio"] = sample["audio"]
+        return result
 
 
 def concatenate_sub_window_mels(predicted_mel_stack):
@@ -307,6 +356,35 @@ def concatenate_sub_window_mels(predicted_mel_stack):
     return predicted_mel_stack.permute(0, 2, 1, 3).reshape(
         batch_size, n_mels, n_sub * n_frames
     )
+
+
+@torch.no_grad()
+def predict_mel_windows(model, eeg_psd_stack, device):
+    """Predict one- and five-second mel windows for an evaluation batch."""
+    model.eval()
+    batch_size, n_sub = eeg_psd_stack.shape[:2]
+    flat_psd = eeg_psd_stack.reshape(
+        batch_size * n_sub,
+        *eeg_psd_stack.shape[2:],
+    ).to(device)
+    flat_prediction = model(flat_psd)
+    predicted = flat_prediction.reshape(
+        batch_size,
+        n_sub,
+        *flat_prediction.shape[1:],
+    )
+    return predicted, concatenate_sub_window_mels(predicted)
+
+
+@torch.no_grad()
+def embed_predicted_mels(model, predicted_mel_stack, mert_extractor):
+    """Invert predicted mel windows and encode the waveforms with frozen MERT."""
+    concatenated_mel = concatenate_sub_window_mels(predicted_mel_stack)
+    waveforms = model.to_wave(concatenated_mel)
+    waveform_arrays = [
+        waveform.astype(np.float32) for waveform in waveforms.cpu().numpy()
+    ]
+    return mert_extractor.encode_arrays(waveform_arrays).cpu()
 
 
 @torch.no_grad()
@@ -322,23 +400,5 @@ def reconstruct_and_embed(model, eeg_psd_stack, mert_extractor, device):
     Returns:
         [B, 768, T] final-layer MERT sequences for the reconstructed audio.
     """
-    model.eval()
-    batch_size, n_sub = eeg_psd_stack.shape[:2]
-    flat_psd = eeg_psd_stack.reshape(batch_size * n_sub, *eeg_psd_stack.shape[2:]).to(device)
-
-    predicted_mel = model(flat_psd)
-    predicted_mel = predicted_mel.reshape(batch_size, n_sub, *predicted_mel.shape[1:])
-    concatenated_mel = concatenate_sub_window_mels(predicted_mel)
-    waveforms = model.to_wave(concatenated_mel)
-
-    mert_device = next(mert_extractor.model.parameters()).device
-    waveform_arrays = [waveform.astype(np.float32) for waveform in waveforms.cpu().numpy()]
-    inputs = mert_extractor.processor(
-        waveform_arrays,
-        sampling_rate=mert_extractor.target_sr,
-        return_tensors="pt",
-        padding=True,
-    )
-    inputs = {key: value.to(mert_device) for key, value in inputs.items()}
-    outputs = mert_extractor.model(**inputs, output_hidden_states=True)
-    return outputs.hidden_states[-1].transpose(1, 2).contiguous().cpu()
+    predicted_mel, _ = predict_mel_windows(model, eeg_psd_stack, device)
+    return embed_predicted_mels(model, predicted_mel, mert_extractor)

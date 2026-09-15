@@ -2,7 +2,8 @@
 /data/
 /runs/
 /logs/
-/slurms/
+/slurms/*
+!/slurms/run_eeg2mel_25fold_pipeline.slurm
 
 # Python environments and caches
 /.venv/

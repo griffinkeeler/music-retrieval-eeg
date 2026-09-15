@@ -136,6 +136,8 @@ class PaperConfigTests(unittest.TestCase):
         self.assertEqual(config.run_name, "eeg2mel_uv")
         self.assertEqual(config.metadata.filename, "five_sec_windows.csv")
         self.assertEqual(config.eeg2mel_baseline.mel_output_dir, "data/mel_targets/uv/5s")
+        self.assertFalse(config.eeg2mel_baseline.evaluation.mert_space.enabled)
+        self.assertEqual(config.eeg2mel_baseline.evaluation.batch_size, 16)
         self.assertEqual(config.splits, base.splits)
         self.assertEqual(config.training.seed, base.training.seed)
 

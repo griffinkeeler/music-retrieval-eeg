@@ -59,7 +59,14 @@ eeg2mel_baseline:
     monitor: val_loss # Only val_loss is supported for this baseline.
     mode: min # Lower validation MSE is better.
   ks: [1, 5, 10] # Retrieval cutoffs, kept equal to the main-model benchmark.
-  audio_pooling: sequence # Preserve reconstructed and real MERT time sequences for the same whole-sequence retrieval scoring as the contrastive model.
+  audio_pooling: sequence # Preserve the full time axis for mel-space retrieval and the optional MERT comparison.
+  evaluation:
+    batch_size: 16 # Batch size for the default predicted-vs-target mel evaluation.
+    save_representations: true # Cache one- and five-second predicted/target mel tensors for analysis.
+    mert_space:
+      enabled: false # Optional expensive comparison: predicted mel -> Griffin-Lim audio -> frozen MERT.
+      model_name: m-a-p/MERT-v1-95M
+      batch_size: 2 # Keep reconstructed-waveform MERT inference memory bounded.
   output_filename: eeg2mel_baseline_test.json # Result file written under runs/<run_name>/benchmarks/.
 
 splits:

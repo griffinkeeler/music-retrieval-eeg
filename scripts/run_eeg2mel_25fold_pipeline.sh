@@ -16,6 +16,7 @@ SKIP_SPLITS=false
 SKIP_TRAINING=false
 SKIP_TESTING=false
 SKIP_COMPLETED=false
+MERT_SPACE=false
 DRY_RUN=false
 
 usage() {
@@ -42,6 +43,8 @@ Options:
   --skip-training        Test existing checkpoints without training
   --skip-testing         Train all folds without running evaluation
   --skip-completed       Reuse existing checkpoints and test_metrics.csv files
+  --mert-space           Also run reconstructed-audio MERT evaluation; the
+                         default evaluation compares mel spectrograms directly
   --dry-run              Print all resolved commands without running them
   -h, --help             Show this help
 
@@ -103,6 +106,10 @@ while (($# > 0)); do
       ;;
     --skip-completed)
       SKIP_COMPLETED=true
+      shift
+      ;;
+    --mert-space)
+      MERT_SPACE=true
       shift
       ;;
     --dry-run)
@@ -317,6 +324,8 @@ if [[ "$SKIP_TESTING" == false ]]; then
     split_path="${SPLIT_PATHS[$task_index]}"
     run_config="${CONFIG_PATHS[$task_index]}"
     test_metrics="$REPO_DIR/runs/$run_name/test_metrics.csv"
+    rich_metrics="$REPO_DIR/runs/$run_name/benchmarks/eeg2mel_baseline_test_metrics.csv"
+    mert_metrics="$REPO_DIR/runs/$run_name/benchmarks/mert_space/song_search_summary.csv"
 
     echo "[$((task_index + 1))/25] Test $run_name"
     if [[ "$DRY_RUN" == true ]]; then
@@ -326,12 +335,17 @@ if [[ "$SKIP_TESTING" == false ]]; then
         --config "$run_config"
         --checkpoint-path "$expected_checkpoint"
       )
+      if [[ "$MERT_SPACE" == true ]]; then
+        test_command+=(--mert-space)
+      fi
       echo "  expected checkpoint: $expected_checkpoint"
       print_command "${test_command[@]}"
       continue
     fi
 
-    if [[ "$SKIP_COMPLETED" == true && -f "$test_metrics" ]]; then
+    if [[ "$SKIP_COMPLETED" == true && -f "$test_metrics" && \
+          -f "$rich_metrics" && \
+          ( "$MERT_SPACE" == false || -f "$mert_metrics" ) ]]; then
       echo "  Reusing existing evaluation: $test_metrics"
       continue
     fi
@@ -347,6 +361,9 @@ if [[ "$SKIP_TESTING" == false ]]; then
       --config "$run_config"
       --checkpoint-path "$checkpoint_path"
     )
+    if [[ "$MERT_SPACE" == true ]]; then
+      test_command+=(--mert-space)
+    fi
     "${test_command[@]}"
   done
 
