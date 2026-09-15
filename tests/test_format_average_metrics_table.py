@@ -332,12 +332,16 @@ class FormatAverageMetricsTableTests(unittest.TestCase):
             output.index(r"\multicolumn{2}{c}{First Run}"),
         )
         self.assertIn(
-            r"\multicolumn{5}{l}{\textit{(a) Marginalized Song Identification}}",
+            r"\multicolumn{5}{l}{\textit{(a) Within-Song Retrieval}}",
             output,
         )
         self.assertIn(
-            r"\multicolumn{5}{l}{\textit{(b) Within-Song Retrieval}}",
+            r"\multicolumn{5}{l}{\textit{(b) Marginalized Song Identification}}",
             output,
+        )
+        self.assertLess(
+            output.index("(a) Within-Song Retrieval"),
+            output.index("(b) Marginalized Song Identification"),
         )
         self.assertIn(r"$\mathbf{0.030 \pm .002}$", output)
         self.assertIn(r"$\mathbf{0.050 \pm .004}$", output)

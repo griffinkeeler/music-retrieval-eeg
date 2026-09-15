@@ -82,7 +82,7 @@ class FormatTable1Tests(unittest.TestCase):
             [
                 "Subject Layer On",
                 "Subject Layer Off",
-                "Cosine Regression",
+                "Ridge Regression",
                 "EEG2Mel",
             ],
         )
@@ -100,8 +100,11 @@ class FormatTable1Tests(unittest.TestCase):
     def test_markdown_bolds_best_unrounded_kappa_in_each_panel(self):
         table = format_table1(self.run_dirs, "markdown")
 
-        self.assertIn("*(a) Marginalized Song Identification*", table)
-        self.assertIn("*(b) Within-Song Retrieval*", table)
+        within_heading = "*(a) Within-Song Retrieval*"
+        marginal_heading = "*(b) Marginalized Song Identification*"
+        self.assertIn(within_heading, table)
+        self.assertIn(marginal_heading, table)
+        self.assertLess(table.index(within_heading), table.index(marginal_heading))
         self.assertIn("**.040 ± .004**", table)
         self.assertIn("**.040 ± .006**", table)
         self.assertIn("| Subjects | .100 ± .003 | .010 ± .004 |", table)
@@ -112,7 +115,11 @@ class FormatTable1Tests(unittest.TestCase):
         self.assertIn(r"\begin{table*}[t]", table)
         self.assertIn(r"\multicolumn{2}{c}{EEG2Mel}", table)
         self.assertIn(
-            r"\multicolumn{9}{l}{\textit{(a) Marginalized Song Identification}}",
+            r"\multicolumn{9}{l}{\textit{(a) Within-Song Retrieval}}",
+            table,
+        )
+        self.assertIn(
+            r"\multicolumn{9}{l}{\textit{(b) Marginalized Song Identification}}",
             table,
         )
         self.assertIn(r"$\mathbf{.040 \pm .004}$", table)

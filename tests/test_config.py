@@ -82,9 +82,9 @@ class PaperConfigTests(unittest.TestCase):
                 "infonce",
             ),
             (
-                "table1_cosine_regression.yaml",
-                "table1-cosine-regression",
-                "cosine_regression",
+                "table1_ridge_regression.yaml",
+                "table1-ridge-regression",
+                "infonce",
             ),
         )
         for name, run_name, objective in cases:
@@ -127,6 +127,16 @@ class PaperConfigTests(unittest.TestCase):
         main.objective.type = cosine.objective.type
         main.run_name = cosine.run_name
         self.assertEqual(main, cosine)
+
+    def test_table1_ridge_config_only_changes_ridge_experiment_name(self):
+        project_root = Path(__file__).resolve().parents[1]
+        ridge = load_config(project_root / "configs" / "ridge_paper.yaml")
+        table1_ridge = load_config(
+            project_root / "configs" / "table1_ridge_regression.yaml"
+        )
+
+        ridge.run_name = table1_ridge.run_name
+        self.assertEqual(ridge, table1_ridge)
 
     def test_eeg2mel_config_is_standalone_and_uses_uv_inputs(self):
         project_root = Path(__file__).resolve().parents[1]
