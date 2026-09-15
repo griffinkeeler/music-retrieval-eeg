@@ -14,7 +14,7 @@ configs/
   table1_infonce_subject_off.yaml Explicit Table I subject-layer-off condition
   ridge_paper.yaml               Shared ridge baseline and song-search settings
   table1_ridge_regression.yaml   Explicit Table I ridge-regression condition
-  eeg2mel_paper.yaml             Standalone UV EEG2Mel settings
+  table1_eeg2mel.yaml            Explicit Table I EEG2Mel condition
   all_splits.yaml                Generate all five UV split families
   chunk_out.yaml                 Temporal chunk-out experiment
   random_segment_out.yaml        Random segment-out experiment
@@ -179,7 +179,7 @@ Run the EEG2Mel condition with its 25-fold launcher:
 
 ```bash
 scripts/run_eeg2mel_25fold_pipeline.sh \
-  --config configs/eeg2mel_paper.yaml \
+  --config configs/table1_eeg2mel.yaml \
   --output-prefix table1-eeg2mel \
   --venv .venv
 ```
@@ -336,7 +336,7 @@ scripts/run_eeg2mel_25fold_pipeline.sh
 The launcher discovers the repository and active Python environment. Use
 `--venv` when needed, or `--dry-run` to inspect every command without
 preprocessing or training. The standalone settings in
-`configs/eeg2mel_paper.yaml` use UV metadata, mel targets under
+`configs/table1_eeg2mel.yaml` use UV metadata, mel targets under
 `data/mel_targets/uv/5s/`, and splits under `runs/eeg2mel_uv/splits/`. Training
 and evaluation use the output prefix `eeg2mel-uv-25split`.
 

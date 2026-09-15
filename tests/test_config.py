@@ -140,7 +140,7 @@ class PaperConfigTests(unittest.TestCase):
 
     def test_eeg2mel_config_is_standalone_and_uses_uv_inputs(self):
         project_root = Path(__file__).resolve().parents[1]
-        config = OmegaConf.load(project_root / "configs" / "eeg2mel_paper.yaml")
+        config = OmegaConf.load(project_root / "configs" / "table1_eeg2mel.yaml")
         base = load_config(project_root / "configs" / "base.yaml")
         self.assertNotIn("extends", config)
         self.assertEqual(config.run_name, "eeg2mel_uv")
