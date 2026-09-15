@@ -608,8 +608,8 @@ def _format_combined_latex_table(run_tables):
         r"\begin{table*}[t]",
         r"\centering",
         (
-            r"\caption{Mean marginalized song identification and top-1 "
-            r"within-song retrieval performance ($R@1$) with chance-normalized "
+            r"\caption{Mean top-1 within-song retrieval and marginalized "
+            r"song identification performance ($R@1$) with chance-normalized "
             r"$\kappa$ (mean $\pm$ SD across five folds). Bold indicates the "
             r"highest $\kappa$ across methods for each data split. An asterisk "
             r"denotes $p_{\mathrm{upper}} \leq "
@@ -638,8 +638,8 @@ def _format_combined_latex_table(run_tables):
     ]
 
     panels = (
-        ("(a) Marginalized Song Identification", 0),
-        ("(b) Within-Song Retrieval", 2),
+        ("(a) Within-Song Retrieval", 2),
+        ("(b) Marginalized Song Identification", 0),
     )
     for panel_index, (panel_label, first_cell) in enumerate(panels):
         lines.append(

@@ -21,11 +21,11 @@ METHODS = (
     ("eeg2mel", "EEG2Mel", "table1-eeg2mel"),
 )
 PANELS = (
+    ("within_song_retrieval", "(a) Within-Song Retrieval"),
     (
         "marginal_song_identification",
-        "(a) Marginalized Song Identification",
+        "(b) Marginalized Song Identification",
     ),
-    ("within_song_retrieval", "(b) Within-Song Retrieval"),
 )
 
 
@@ -155,8 +155,8 @@ def format_latex_table(methods):
     lines = [
         r"\begin{table*}[t]",
         (
-            r"\caption{Mean marginalized song identification and top-1 "
-            r"within-song retrieval performance ($R@1$) with chance-normalized "
+            r"\caption{Mean top-1 within-song retrieval and marginalized "
+            r"song identification performance ($R@1$) with chance-normalized "
             r"$\kappa$ (mean $\pm$ sample SD across five folds). Bold indicates "
             r"the highest $\kappa$ across methods for each data split.}"
         ),

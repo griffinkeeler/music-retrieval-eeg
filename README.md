@@ -254,8 +254,8 @@ compilable instead of requiring a separate wrapper file. It can also be used
 with one run when `--format latex` is selected.
 
 The combined table follows the manuscript's two-panel layout: every supplied
-run becomes an `R@1`/`κ` column group, marginalized song identification appears
-in panel (a), and within-song retrieval appears in panel (b). The largest κ is
+run becomes an `R@1`/`κ` column group, within-song retrieval appears in panel
+(a), and marginalized song identification appears in panel (b). The largest κ is
 bolded across the supplied runs for each data split and panel.
 
 To preview the generated table in PyCharm:
