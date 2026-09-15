@@ -2,7 +2,7 @@
 
 Code accompanying the ICASSP 2027 submission on retrieving aligned music from EEG recorded during naturalistic listening.
 
-The main model learns a shared temporal embedding space for five-second EEG windows and frozen MERT audio features. The repository also contains the reported ridge-regression, cosine-regression, and EEG2Mel baselines, deterministic split generation for all five evaluation regimes, and Table I result formatters.
+The main model learns a shared temporal embedding space for five-second EEG windows and frozen MERT audio features. The repository also contains the reported ridge-regression and EEG2Mel baselines, deterministic split generation for all five evaluation regimes, and Table I result formatters.
 
 ## Repository layout
 
@@ -10,11 +10,9 @@ The main model learns a shared temporal embedding space for five-second EEG wind
 configs/
   base.yaml                      Shared UV settings; InfoNCE and subject layer on
   infonce_paper.yaml             Main UV InfoNCE experiment and output name
-  cosine_regression_paper.yaml   Same-encoder non-contrastive ablation
   table1_infonce_subject_on.yaml Explicit Table I subject-layer-on condition
   table1_infonce_subject_off.yaml Explicit Table I subject-layer-off condition
-  table1_cosine_regression.yaml  Explicit Table I cosine-regression condition
-  ridge_paper.yaml               Ridge baseline and marginalized song-search settings
+  ridge_paper.yaml               Table I ridge baseline and song-search settings
   eeg2mel_paper.yaml             Standalone UV EEG2Mel settings
   all_splits.yaml                Generate all five UV split families
   chunk_out.yaml                 Temporal chunk-out experiment
@@ -28,8 +26,7 @@ scripts/
   run_contrastive_25fold_pipeline.sh Reproduce all base contrastive runs
   run_ridge_25fold_pipeline.sh   Reproduce all ridge-regression runs
   run_eeg2mel_25fold_pipeline.sh Reproduce all reported EEG2Mel runs
-  format_table1.py               Combine four complete runs into Table I
-  format_average_metrics_table.py Format one method's five-fold summaries
+  format_average_metrics_table.py Format and combine five-fold summaries
   train.py                       Train the configured alignment objective
   test.py                        Evaluate retrieval and song metrics
 src/
@@ -124,7 +121,7 @@ estimated. EEG is saved under `data/eeg/uv/5s/`, with `eeg_unit: uV` in each
 tensor and metadata row. The generator also recreates MERT features under
 `data/audio/mert/5s/`. It does not convert the old robust-scaled tensor cache.
 
-Generate fresh splits for the contrastive and cosine-regression runs:
+Generate fresh splits for the contrastive and ridge-regression runs:
 
 ```bash
 python -m scripts.create_splits --config configs/all_splits.yaml
@@ -136,8 +133,8 @@ the required `mel_path` metadata and matching split files. The executable
 configuration uses 60% training, 10% validation, and 30% test data; the emitted
 split CSVs are the authoritative assignments for every model condition.
 
-All training examples below use UV inputs. The main model, cosine ablation, and
-ridge baseline share `runs/icassp2027-uv-splits/splits/`. EEG2Mel prepares
+All training examples below use UV inputs. The main model and ridge baseline
+share `runs/icassp2027-uv-splits/splits/`. EEG2Mel prepares
 matching folds under `runs/eeg2mel_uv/splits/` with the additional `mel_path`
 column. Archived robust-scaled runs retain their original saved configurations.
 
@@ -150,11 +147,11 @@ models in total:
 | --- | --- | --- |
 | Subject Layer On | Symmetric InfoNCE | Enabled |
 | Subject Layer Off | Symmetric InfoNCE | Disabled |
-| Cosine Regression | Paired `1 - cosine` | Enabled |
+| Ridge Regression | Linear EEG-to-mean-pooled-MERT regression | Not applicable |
 | EEG2Mel | Mel-spectrogram MSE | Not applicable |
 
 Complete the [data preparation](#data-preparation) steps first. Then run the
-three direct EEG-to-MERT conditions with the contrastive 25-fold launcher:
+two contrastive EEG-to-MERT conditions with the contrastive 25-fold launcher:
 
 ```bash
 scripts/run_contrastive_25fold_pipeline.sh \
@@ -165,8 +162,16 @@ scripts/run_contrastive_25fold_pipeline.sh \
   --config configs/table1_infonce_subject_off.yaml \
   --venv .venv
 
-scripts/run_contrastive_25fold_pipeline.sh \
-  --config configs/table1_cosine_regression.yaml \
+```
+
+Run the ridge-regression baseline on the same 25 UV splits. This fits a new
+standardized linear EEG-to-mean-pooled-MERT mapping for every fold and evaluates
+it with the shared retrieval and marginalized song-identification metrics:
+
+```bash
+scripts/run_ridge_25fold_pipeline.sh \
+  --config configs/ridge_paper.yaml \
+  --output-prefix ridge \
   --venv .venv
 ```
 
@@ -179,9 +184,9 @@ scripts/run_eeg2mel_25fold_pipeline.sh \
   --venv .venv
 ```
 
-Each invocation trains and evaluates five folds for all five evaluation
+Each method trains or fits and evaluates five folds for all five evaluation
 regimes, for 25 models per method and 100 models in total. The EEG2Mel launcher
-also creates its mel targets and matching split files. Both launchers call
+also creates its mel targets and matching split files. All three launchers call
 `scripts.average_test_results` after evaluation to write one aggregate CSV per
 evaluation regime under the method's `average_metrics/` directory.
 
@@ -195,7 +200,7 @@ The completed method outputs are:
 ```text
 runs/final_results/table1-infonce-subject-on/
 runs/final_results/table1-infonce-subject-off/
-runs/final_results/table1-cosine-regression/
+runs/final_results/ridge/
 runs/final_results/table1-eeg2mel/
 ```
 
@@ -218,16 +223,28 @@ python -m scripts.format_average_metrics_table \
   --format markdown
 ```
 
-To combine existing per-run `results_table.tex` files into one wide
-`runs/final_results/final_table.tex`, pass the run names in the desired column
-order:
+Create one LaTeX summary for each method, then combine them into the wide
+`runs/final_results/final_table.tex` in the desired column order:
 
 ```bash
+for METHOD in \
+  table1-infonce-subject-on \
+  table1-infonce-subject-off \
+  ridge \
+  table1-eeg2mel
+do
+  python -m scripts.format_average_metrics_table \
+    "$METHOD" \
+    --format latex \
+    --output "runs/final_results/$METHOD/results_table.tex"
+done
+
 python -m scripts.format_average_metrics_table \
   --concatenate-runs \
   table1-infonce-subject-on \
   table1-infonce-subject-off \
-  table1-cosine-regression \
+  ridge \
+  table1-eeg2mel \
   --standalone
 ```
 
@@ -250,14 +267,6 @@ To preview the generated table in PyCharm:
    from **Settings | Plugins | Marketplace**, then restart PyCharm.
 3. Open `runs/final_results/final_table.tex` and use the TeXiFy run action or
    gutter icon to compile it. The resulting PDF opens in PyCharm's PDF viewer.
-
-After all four method runs exist, build the combined paper table with:
-
-```bash
-python -m scripts.format_table1 \
-  --format latex \
-  --output runs/final_results/table1.tex
-```
 
 The formatter reads `song_identification_marginal_top1` and
 `within_song_r_at_1` from every split-family aggregate. It preserves the Table I
@@ -286,28 +295,6 @@ It defaults to `configs/infonce_paper.yaml` and uses that config's `run_name`,
 `icassp2027-uv-infonce-25split`, as the output prefix.
 
 Training writes checkpoints under `runs/checkpoints/<run_name>/`. Evaluation writes retrieval, song-identification, localization, and permutation summaries under `runs/<run_name>/`.
-
-### Same-encoder cosine-regression ablation
-
-`configs/cosine_regression_paper.yaml` changes only the scientific setting under
-test: it replaces InfoNCE with `1 - cosine` between each EEG output and its
-paired MERT target, computed jointly over the complete feature-by-time
-representation. It also supplies a distinct output name. The encoder, direct
-768-dimensional alignment, subject-layer setting, splits, training seed,
-optimizer, and retrieval evaluation remain inherited from
-`configs/infonce_paper.yaml`.
-
-Run the complete matched 25-fold ablation with:
-
-```bash
-scripts/run_contrastive_25fold_pipeline.sh \
-  --config configs/cosine_regression_paper.yaml \
-  --venv .venv
-```
-
-New checkpoints record the objective name and state explicitly. Evaluation also
-continues to load legacy InfoNCE checkpoints that contain only
-`clip_state_dict`.
 
 ## Ridge baseline
 
