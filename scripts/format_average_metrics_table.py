@@ -275,6 +275,17 @@ def _read_retrieval_metrics(path):
             all_folds_significant = _parse_all_folds_significant(
                 p_row, p_metric, path
             )
+        elif "p_upper" in fieldnames and (row.get("p_upper") or "").strip():
+            # Ridge aggregate CSVs keep the p-value on the metric row.
+            p_upper = _parse_finite_number(row, "p_upper", metric, path)
+            if not 0.0 <= p_upper <= 1.0:
+                raise ValueError(
+                    f"Metric {metric!r} in {path} must have a p-value "
+                    "between 0 and 1."
+                )
+            all_folds_significant = _parse_all_folds_significant(
+                row, metric, path
+            )
 
         results[retrieval_name] = RetrievalResult(
             **values,

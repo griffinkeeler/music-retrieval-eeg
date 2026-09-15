@@ -8,6 +8,8 @@ from scripts.average_test_results import (
     AGGREGATE_FIELDS,
     ALL_FOLDS_SIGNIFICANT_FIELD,
     METRIC_FIELDS,
+    RIDGE_AGGREGATE_FIELDS,
+    RIDGE_METRIC_FIELDS,
     SPLIT_DIRECTORY_LABELS,
     SPLIT_LABELS,
     SIGNIFICANCE_THRESHOLD,
@@ -70,6 +72,41 @@ class AverageTestResultsTests(unittest.TestCase):
                     fold,
                     p_upper=None if p_values is None else p_values[fold],
                 )
+
+    def _write_complete_ridge_run(self):
+        for split_label in SPLIT_LABELS:
+            directory_label = SPLIT_DIRECTORY_LABELS[split_label]
+            for fold in range(5):
+                fold_dir = (
+                    self.run_dir
+                    / f"{self.run_prefix}-{directory_label}-fold{fold}"
+                    / "benchmarks"
+                )
+                fold_dir.mkdir(parents=True)
+                value = 0.2 + fold * 0.02
+                chance = 0.1
+                with (fold_dir / "ridge_baseline_test_metrics.csv").open(
+                    "w", newline=""
+                ) as handle:
+                    writer = csv.DictWriter(
+                        handle,
+                        fieldnames=RIDGE_METRIC_FIELDS,
+                    )
+                    writer.writeheader()
+                    writer.writerow(
+                        {
+                            "space": "pooled_mert",
+                            "metric": "song_identification_marginal_top1",
+                            "value": value,
+                            "chance": chance,
+                            "gap": value - chance,
+                            "chance_ratio": value / chance,
+                            "null_mean": 0.11,
+                            "p_upper": 0.01 + fold * 0.005,
+                            "p_lower": 0.99 - fold * 0.005,
+                            "unit": "proportion",
+                        }
+                    )
 
     def test_writes_five_csvs_with_fold_means_and_sample_sds(self):
         self._write_complete_run()
@@ -166,6 +203,26 @@ class AverageTestResultsTests(unittest.TestCase):
         self.assertLess(
             float(not_significant["value"]), SIGNIFICANCE_THRESHOLD
         )
+
+    def test_averages_ridge_metric_schema_and_embedded_p_values(self):
+        self._write_complete_ridge_run()
+
+        output_paths = average_test_results(self.run_dir)
+
+        with output_paths[0].open(newline="") as handle:
+            reader = csv.DictReader(handle)
+            self.assertEqual(tuple(reader.fieldnames), RIDGE_AGGREGATE_FIELDS)
+            row = next(reader)
+
+        values = [0.2 + fold * 0.02 for fold in range(5)]
+        kappas = [(value - 0.1) / 0.9 for value in values]
+        self.assertEqual(row["space"], "pooled_mert")
+        self.assertEqual(row["metric"], "song_identification_marginal_top1")
+        self.assertAlmostEqual(float(row["value"]), statistics.mean(values))
+        self.assertAlmostEqual(float(row["kappa"]), statistics.mean(kappas))
+        self.assertAlmostEqual(float(row["null_mean"]), 0.11)
+        self.assertAlmostEqual(float(row["p_upper"]), 0.02)
+        self.assertEqual(row[ALL_FOLDS_SIGNIFICANT_FIELD], "true")
 
     def test_missing_fold_stops_before_writing_outputs(self):
         self._write_complete_run()

@@ -40,6 +40,13 @@ testing:
   song_search_marginal_temperature: 0.07
   song_search_filename: song_search_results.csv
 
+ridge_baseline:
+  alpha: 1.0
+  solver: auto
+  audio_pooling: mean
+  ks: [1, 5, 10]
+  output_filename: ridge_baseline_test.json
+
 ablations:
   use_subject_layer: true
   freeze_audio_projection: false

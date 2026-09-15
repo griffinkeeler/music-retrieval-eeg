@@ -6,7 +6,7 @@ src/evaluation/eeg2mel_baseline.py), and each sub-window's mel-spectrogram is
 cached to disk. A `mel_path` column is added to the metadata CSV in place,
 mirroring how create_window_metadata.py caches MERT embeddings via
 `audio_path`. EEGMusicWindowDataset ignores unknown columns, so this is
-non-breaking for the main model.
+non-breaking for the main model and ridge baseline.
 
 Note: create_window_metadata.py's __main__ fully regenerates the metadata
 CSV. If that script is rerun, this one must be rerun afterward to restore

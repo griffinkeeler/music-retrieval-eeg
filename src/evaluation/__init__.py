@@ -49,9 +49,12 @@ from .retrieval import (topk_accuracy_from_logits,
                         evaluate_section_null_regime,
                         log_section_null_metrics,
                         log_section_p_metrics)
+from .baselines import RidgeEEGToAudio
+
 __all__ = [
     "topk_accuracy_from_logits",
     "topk_retrieval_accuracy",
+    "RidgeEEGToAudio",
     "retrieval_metric",
     "permutation_null",
     "retrieval_with_candidate_pool",

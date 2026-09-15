@@ -5,7 +5,10 @@ import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
-from scripts.average_test_results import ALL_FOLDS_SIGNIFICANT_FIELD
+from scripts.average_test_results import (
+    ALL_FOLDS_SIGNIFICANT_FIELD,
+    RIDGE_AGGREGATE_FIELDS,
+)
 from scripts.format_average_metrics_table import (
     FINAL_TABLE_FILENAME,
     SPLITS,
@@ -110,6 +113,51 @@ class FormatAverageMetricsTableTests(unittest.TestCase):
                 **p_values.get(split, {}),
             )
 
+    def _write_complete_ridge_set(self):
+        for split_index, (split, _) in enumerate(SPLITS):
+            path = (
+                self.average_dir
+                / f"ridge_model_{split}_5fold_average_metrics.csv"
+            )
+            with path.open("w", newline="") as handle:
+                writer = csv.DictWriter(
+                    handle,
+                    fieldnames=RIDGE_AGGREGATE_FIELDS,
+                )
+                writer.writeheader()
+                for metric, value, kappa, p_upper, significant in (
+                    (
+                        "song_identification_marginal_top1",
+                        0.02 + split_index * 0.01,
+                        0.01,
+                        0.02,
+                        True,
+                    ),
+                    (
+                        "within_song_r_at_1",
+                        0.06 + split_index * 0.01,
+                        0.04,
+                        0.08,
+                        False,
+                    ),
+                ):
+                    writer.writerow(
+                        {
+                            "space": "pooled_mert",
+                            "metric": metric,
+                            "value": value,
+                            "value_sd": 0.003,
+                            "kappa": kappa,
+                            "kappa_sd": 0.002,
+                            "p_upper": p_upper,
+                            ALL_FOLDS_SIGNIFICANT_FIELD: str(
+                                significant
+                            ).lower(),
+                            "n_folds": 5,
+                            "unit": "proportion",
+                        }
+                    )
+
     @staticmethod
     def _write_results_table(
         final_results_dir,
@@ -165,6 +213,22 @@ class FormatAverageMetricsTableTests(unittest.TestCase):
 
         self.assertIn("Subjects                      .011 ± .003", table)
         self.assertIn("Random Segments               .051 ± .003", table)
+
+    def test_supports_ridge_p_values_embedded_in_metric_rows(self):
+        self._write_complete_ridge_set()
+
+        prefix, rows = load_table(self.run_dir)
+
+        self.assertEqual(prefix, "ridge_model")
+        self.assertAlmostEqual(
+            rows[0].marginal_song_identification.p_upper,
+            0.02,
+        )
+        self.assertTrue(
+            rows[0].marginal_song_identification.all_folds_significant
+        )
+        self.assertAlmostEqual(rows[0].within_song_retrieval.p_upper, 0.08)
+        self.assertFalse(rows[0].within_song_retrieval.all_folds_significant)
 
     def test_formats_markdown_and_latex_like_table_i(self):
         self._write_complete_set()

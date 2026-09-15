@@ -2,7 +2,7 @@
 
 Code accompanying the ICASSP 2027 submission on retrieving aligned music from EEG recorded during naturalistic listening.
 
-The main model learns a shared temporal embedding space for five-second EEG windows and frozen MERT audio features. The repository also contains the reported cosine-regression and EEG2Mel baselines, deterministic split generation for all five evaluation regimes, and Table I result formatters.
+The main model learns a shared temporal embedding space for five-second EEG windows and frozen MERT audio features. The repository also contains the reported ridge-regression, cosine-regression, and EEG2Mel baselines, deterministic split generation for all five evaluation regimes, and Table I result formatters.
 
 ## Repository layout
 
@@ -14,6 +14,7 @@ configs/
   table1_infonce_subject_on.yaml Explicit Table I subject-layer-on condition
   table1_infonce_subject_off.yaml Explicit Table I subject-layer-off condition
   table1_cosine_regression.yaml  Explicit Table I cosine-regression condition
+  ridge_paper.yaml               Ridge baseline and marginalized song-search settings
   eeg2mel_paper.yaml             Standalone UV EEG2Mel settings
   all_splits.yaml                Generate all five UV split families
   chunk_out.yaml                 Temporal chunk-out experiment
@@ -25,6 +26,7 @@ scripts/
   create_window_metadata.py      Build aligned five-second EEG/MERT metadata
   create_splits.py               Generate deterministic five-fold split CSVs
   run_contrastive_25fold_pipeline.sh Reproduce all base contrastive runs
+  run_ridge_25fold_pipeline.sh   Reproduce all ridge-regression runs
   run_eeg2mel_25fold_pipeline.sh Reproduce all reported EEG2Mel runs
   format_table1.py               Combine four complete runs into Table I
   format_average_metrics_table.py Format one method's five-fold summaries
@@ -33,7 +35,7 @@ scripts/
 src/
   data/                           Datasets, split generation, and mel targets
   encoders/                       EEG and frozen MERT encoders
-  evaluation/                     Retrieval and EEG2Mel evaluation
+  evaluation/                     Retrieval, ridge, and EEG2Mel evaluation
   model/                          Contrastive components and training
 tests/                            Paper-pipeline regression tests
 ```
@@ -134,10 +136,10 @@ the required `mel_path` metadata and matching split files. The executable
 configuration uses 60% training, 10% validation, and 30% test data; the emitted
 split CSVs are the authoritative assignments for every model condition.
 
-All training examples below use UV inputs. The main model and cosine ablation
-share `runs/icassp2027-uv-splits/splits/`. EEG2Mel prepares matching folds under
-`runs/eeg2mel_uv/splits/` with the additional `mel_path` column. Archived
-robust-scaled runs retain their original saved configurations.
+All training examples below use UV inputs. The main model, cosine ablation, and
+ridge baseline share `runs/icassp2027-uv-splits/splits/`. EEG2Mel prepares
+matching folds under `runs/eeg2mel_uv/splits/` with the additional `mel_path`
+column. Archived robust-scaled runs retain their original saved configurations.
 
 ## Reproducing Table I
 
@@ -307,6 +309,28 @@ New checkpoints record the objective name and state explicitly. Evaluation also
 continues to load legacy InfoNCE checkpoints that contain only
 `clip_state_dict`.
 
+## Ridge baseline
+
+The ridge baseline standardizes flattened five-second EEG windows, learns a
+regularized linear mapping to mean-pooled MERT targets, and evaluates the
+predictions with the same retrieval and song-search benchmark as the main
+model. Its output includes both max-window song identification and the
+length-normalized marginalized song-identification metric, with permutation
+null statistics and upper- and lower-tail p-values.
+
+Run all five folds of all five split families with:
+
+```bash
+scripts/run_ridge_25fold_pipeline.sh --venv .venv
+```
+
+The launcher reads `configs/ridge_paper.yaml`, uses the shared UV splits, and
+writes the 25 fold runs plus five averaged metrics files under
+`runs/final_results/ridge-uv-25split/`. Use `--skip-completed` to resume a
+partial sweep or `--dry-run` to inspect the command. Ridge strength,
+permutation counts, and the marginalized song-search temperature can be
+overridden from the launcher; run it with `--help` for the complete list.
+
 ## EEG2Mel baseline
 
 The paper reports the five-second EEG2Mel baseline preserved from the
@@ -336,7 +360,8 @@ pytest
 
 The curated suite covers split determinism, metadata layout, fixed microvolt
 conversion and window independence, config inheritance, the EEG encoder,
-contrastive retrieval, Table I assembly, and the reported EEG2Mel baseline.
+contrastive retrieval, ridge regression, Table I assembly, and the reported
+EEG2Mel baseline.
 The unittest-compatible suite can also be run with
 `python -m unittest discover -s tests`.
 

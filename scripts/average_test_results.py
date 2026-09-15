@@ -58,14 +58,66 @@ AGGREGATE_FIELDS = (
     "n_folds",
     "unit",
 )
+RIDGE_METRIC_FIELDS = (
+    "space",
+    "metric",
+    "value",
+    "chance",
+    "gap",
+    "chance_ratio",
+    "null_mean",
+    "p_upper",
+    "p_lower",
+    "unit",
+)
+RIDGE_NUMERIC_FIELDS = (
+    "value",
+    "chance",
+    "gap",
+    "chance_ratio",
+    "null_mean",
+    "p_upper",
+    "p_lower",
+)
+RIDGE_AGGREGATE_FIELDS = (
+    "space",
+    "metric",
+    "value",
+    "value_sd",
+    "chance",
+    "chance_sd",
+    "kappa",
+    "kappa_sd",
+    "gap",
+    "gap_sd",
+    "chance_ratio",
+    "chance_ratio_sd",
+    "null_mean",
+    "null_mean_sd",
+    "p_upper",
+    "p_upper_sd",
+    "p_lower",
+    "p_lower_sd",
+    ALL_FOLDS_SIGNIFICANT_FIELD,
+    "n_folds",
+    "unit",
+)
 METRIC_SCHEMAS = {
     METRIC_FIELDS: {
         "identity_fields": ("metric",),
         "numeric_fields": NUMERIC_FIELDS,
         "aggregate_fields": AGGREGATE_FIELDS,
     },
+    RIDGE_METRIC_FIELDS: {
+        "identity_fields": ("space", "metric"),
+        "numeric_fields": RIDGE_NUMERIC_FIELDS,
+        "aggregate_fields": RIDGE_AGGREGATE_FIELDS,
+    },
 }
-METRIC_RELATIVE_PATHS = (Path("test_metrics.csv"),)
+METRIC_RELATIVE_PATHS = (
+    Path("test_metrics.csv"),
+    Path("benchmarks/ridge_baseline_test_metrics.csv"),
+)
 FOLD_RUN_PATTERN = re.compile(
     rf"^(?P<prefix>.+)-(?P<split>"
     rf"{'|'.join(re.escape(label) for label in DIRECTORY_TO_OUTPUT_LABEL)})-fold"
@@ -312,6 +364,20 @@ def _average_fold_rows(metric_paths):
             else:
                 averaged[field] = ""
                 averaged[f"{field}_sd"] = ""
+
+        # Ridge metrics store their permutation p-value beside the observed
+        # score instead of as a separate ``*_p_upper`` metric row.
+        if "p_upper" in schema["numeric_fields"]:
+            p_upper_values = [rows[row_index]["p_upper"] for rows in fold_rows]
+            if all(p_upper_values):
+                averaged[ALL_FOLDS_SIGNIFICANT_FIELD] = (
+                    "true"
+                    if all(
+                        float(value) <= SIGNIFICANCE_THRESHOLD
+                        for value in p_upper_values
+                    )
+                    else "false"
+                )
 
         if _uses_kappa(metric) and all(
             rows[row_index][field]

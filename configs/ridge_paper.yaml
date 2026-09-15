@@ -1,0 +1,23 @@
+# Ridge-regression settings for the five-family by five-fold paper baseline.
+# The sweep writes runs/final_results/<run_name>/<run_name>-<split-family>-fold<0-4>/.
+extends: base.yaml
+
+run_name: ridge-uv-25split
+
+training:
+  filename: chunk_out_fold0.csv
+
+testing:
+  filename: chunk_out_fold0.csv
+
+ridge_baseline:
+  alpha: 1.0 # L2 regularization strength for the standardized linear EEG-to-audio mapping.
+  solver: auto # Scikit-learn Ridge solver; auto selects a solver based on the design matrix shape.
+  audio_pooling: mean # Pool each temporal MERT window to one 768-dimensional regression target.
+  ks: [1, 5, 10] # Retrieval cutoffs, kept equal to the main-model benchmark by default.
+  n_perms: 1000 # Candidate-pool audio permutations for null statistics.
+  n_within_song_shuffles: 1000 # Within-song audio and prediction shuffles.
+  n_song_search_perms: 1000 # Audio-column permutations for song-identification significance.
+  song_search_permutation_batch_size: 16 # Song-identification permutations processed together.
+  song_search_marginal_temperature: 0.07 # Fixed softmax temperature for length-normalized window-probability marginalization.
+  output_filename: ridge_baseline_test.json # Result file written under each fold run's benchmarks directory.

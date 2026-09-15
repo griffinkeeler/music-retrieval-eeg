@@ -72,6 +72,11 @@ class PaperConfigTests(unittest.TestCase):
                 "cosine_regression",
             ),
             (
+                "ridge_paper.yaml",
+                "ridge-uv-25split",
+                "infonce",
+            ),
+            (
                 "table1_infonce_subject_on.yaml",
                 "table1-infonce-subject-on",
                 "infonce",
