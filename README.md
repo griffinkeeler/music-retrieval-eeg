@@ -12,7 +12,8 @@ configs/
   infonce_paper.yaml             Main UV InfoNCE experiment and output name
   table1_infonce_subject_on.yaml Explicit Table I subject-layer-on condition
   table1_infonce_subject_off.yaml Explicit Table I subject-layer-off condition
-  ridge_paper.yaml               Table I ridge baseline and song-search settings
+  ridge_paper.yaml               Shared ridge baseline and song-search settings
+  table1_ridge_regression.yaml   Explicit Table I ridge-regression condition
   eeg2mel_paper.yaml             Standalone UV EEG2Mel settings
   all_splits.yaml                Generate all five UV split families
   chunk_out.yaml                 Temporal chunk-out experiment
@@ -170,8 +171,7 @@ it with the shared retrieval and marginalized song-identification metrics:
 
 ```bash
 scripts/run_ridge_25fold_pipeline.sh \
-  --config configs/ridge_paper.yaml \
-  --output-prefix ridge \
+  --config configs/table1_ridge_regression.yaml \
   --venv .venv
 ```
 
@@ -200,7 +200,7 @@ The completed method outputs are:
 ```text
 runs/final_results/table1-infonce-subject-on/
 runs/final_results/table1-infonce-subject-off/
-runs/final_results/ridge/
+runs/final_results/table1-ridge-regression/
 runs/final_results/table1-eeg2mel/
 ```
 
@@ -230,7 +230,7 @@ Create one LaTeX summary for each method, then combine them into the wide
 for METHOD in \
   table1-infonce-subject-on \
   table1-infonce-subject-off \
-  ridge \
+  table1-ridge-regression \
   table1-eeg2mel
 do
   python -m scripts.format_average_metrics_table \
@@ -243,7 +243,7 @@ python -m scripts.format_average_metrics_table \
   --concatenate-runs \
   table1-infonce-subject-on \
   table1-infonce-subject-off \
-  ridge \
+  table1-ridge-regression \
   table1-eeg2mel \
   --standalone
 ```
